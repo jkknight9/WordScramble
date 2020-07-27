@@ -9,7 +9,7 @@
 import UIKit
 
 class ViewController: UITableViewController {
-
+    
     var allwords = [String]()
     var usedWords = [String]()
     
@@ -17,6 +17,7 @@ class ViewController: UITableViewController {
         super.viewDidLoad()
         
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(promptForAnswer))
+        navigationItem.leftBarButtonItem = UIBarButtonItem(title: "New Game", style: .plain, target: self, action: #selector(startGame))
         
         if let startWordsURL = Bundle.main.url(forResource: "start", withExtension: "txt") {
             if let startWords = try? String(contentsOf: startWordsURL) {
@@ -30,7 +31,7 @@ class ViewController: UITableViewController {
         startGame()
         
     }
-    func startGame() {
+    @objc func startGame() {
         title = allwords.randomElement()
         usedWords.removeAll(keepingCapacity: true)
         tableView.reloadData()
@@ -63,6 +64,10 @@ class ViewController: UITableViewController {
     
     func submit(_ answer: String) {
         let lowerAnswer = answer.lowercased()
+        
+        var errorTitle: String
+        var errorMessage: String
+        
         if isPossible(word: lowerAnswer) {
             if isOriginal(word: lowerAnswer) {
                 if isReal(word: lowerAnswer) {
@@ -70,9 +75,25 @@ class ViewController: UITableViewController {
                     
                     let indexPath = IndexPath(row: 0, section: 0)
                     tableView.insertRows(at: [indexPath], with: .automatic)
+                    return
+                } else {
+                    errorTitle = "Word not recognized"
+                    errorMessage = "You can't just make words up."
                 }
+            } else {
+                errorTitle = "Word already used"
+                errorMessage = "Be more original!"
             }
+        } else {
+            guard let title = title else {return}
+            errorTitle = "Word not possible"
+            errorMessage = "Word is less than 3 characters or you can't spell that word from \(title.lowercased())"
+            
         }
+        
+        let ac = UIAlertController(title: errorTitle, message: errorMessage, preferredStyle: .alert)
+        ac.addAction(UIAlertAction(title: "OK", style: .default))
+        present(ac,animated: true)
     }
     
     func isPossible(word:String) -> Bool {
@@ -80,6 +101,9 @@ class ViewController: UITableViewController {
         for letter in word {
             if let position = tempWord.firstIndex(of: letter) {
                 tempWord.remove(at: position)
+                if word.count < 3 {
+                    return false
+                }
             } else {
                 return false
             }
@@ -99,4 +123,3 @@ class ViewController: UITableViewController {
         return misspelledRange.location == NSNotFound
     }
 }
-
